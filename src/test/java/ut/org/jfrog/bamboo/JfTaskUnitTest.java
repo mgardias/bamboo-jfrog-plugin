@@ -3,6 +3,7 @@ package ut.org.jfrog.bamboo;
 import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
+import com.atlassian.bandana.BandanaManager;
 import com.atlassian.plugin.PluginAccessor;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +38,7 @@ public class JfTaskUnitTest {
         TaskContextMock context = new TaskContextMock(workingDir);
         JfTask jfTask = new JfTask();
 
-        ServerConfigManager serverConfigManager = Mockito.mock(ServerConfigManager.class);
+        BandanaManager bandanaManager = Mockito.mock(BandanaManager.class);
         // ServerConfig serverConfig = new ServerConfig("myserver", "https://example.com", "username", "password", "accessToken","","");
         //when(serverConfigManager.getAllServerConfigs()).thenReturn(List.of(serverConfig));
 
@@ -52,7 +53,7 @@ public class JfTaskUnitTest {
 
         PluginAccessor pluginAccessor = Mockito.mock(PluginAccessor.class);
         jfTask.setPluginAccessor(pluginAccessor);
-        jfTask.setServerConfigManager(serverConfigManager);
+        jfTask.setBandanaManager(bandanaManager);
         jfTask.execute(context);
     }
 

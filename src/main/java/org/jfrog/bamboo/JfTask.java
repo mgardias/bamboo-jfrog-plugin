@@ -9,13 +9,14 @@ import com.atlassian.bamboo.task.TaskType;
 import com.atlassian.bamboo.v2.build.BuildContext;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
+import com.atlassian.bandana.BandanaManager;
 import com.atlassian.plugin.PluginAccessor;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jfrog.bamboo.config.ServerConfigManager;
 import org.jfrog.bamboo.config.ServerConfig;
+import org.jfrog.bamboo.config.ServerConfigManager;
 import org.jfrog.bamboo.config.ServerConfigManagerImpl;
 import org.jfrog.bamboo.utils.BambooUtils;
 import org.jfrog.bamboo.utils.BuildLog;
@@ -38,9 +39,12 @@ import java.util.stream.Collectors;
  */
 public class JfTask extends JfContext implements TaskType {
     private BuildLog buildLog;
-    @Inject
-    private ServerConfigManager serverConfigManager;
     private ExecutableRunner commandRunner;
+
+    @Inject
+    @ComponentImport
+    private BandanaManager bandanaManager;
+
     @Inject
     @ComponentImport
     private CustomVariableContext customVariableContext;
@@ -61,7 +65,7 @@ public class JfTask extends JfContext implements TaskType {
     @Override
     public @NotNull TaskResult execute(final @NotNull TaskContext taskContext) {
         buildLog = new BuildLog(taskContext.getBuildLogger());
-        serverConfigManager = serverConfigManager;
+        ServerConfigManager serverConfigManager = new ServerConfigManagerImpl(bandanaManager);
         ConfigurationMap confMap = taskContext.getConfigurationMap();
         TaskResultBuilder resultBuilder = TaskResultBuilder.newBuilder(taskContext);
         ServerConfig selectedServerConfig = serverConfigManager.getServerConfigById(confMap.get(JF_TASK_SERVER_ID));
@@ -83,7 +87,7 @@ public class JfTask extends JfContext implements TaskType {
             commandRunner = new ExecutableRunner(jfExecutablePath, workingDir, envs, secrets, buildLog);
 
             // Run 'jf config add' and 'jf config use' commands.
-            int exitCode = configAllJFrogServers();
+            int exitCode = configAllJFrogServers(serverConfigManager);
             if (exitCode != 0) {
                 return resultBuilder.failedWithError().build();
             }
@@ -193,7 +197,7 @@ public class JfTask extends JfContext implements TaskType {
      * @throws IOException          If an I/O error occurs.
      * @throws InterruptedException If the execution is interrupted.
      */
-    private int configAllJFrogServers() throws IOException, InterruptedException {
+    private int configAllJFrogServers(ServerConfigManager serverConfigManager) throws IOException, InterruptedException {
         int exitCode = 0;
         for (ServerConfig serverConfig : serverConfigManager.getAllServerConfigs()) {
             exitCode = runJFrogCliConfigAddCommand(serverConfig);
@@ -263,7 +267,8 @@ public class JfTask extends JfContext implements TaskType {
         this.administrationConfigurationAccessor = administrationConfigurationAccessor;
     }
 
-    public void setServerConfigManager(ServerConfigManager serverConfigManager) {
-        this.serverConfigManager = serverConfigManager;
+    @SuppressWarnings("unused")
+    public void setBandanaManager(BandanaManager bandanaManager) {
+        this.bandanaManager = bandanaManager;
     }
 }
